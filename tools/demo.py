@@ -23,6 +23,8 @@ from model.nms_wrapper import nms
 from utils.timer import Timer
 import tensorflow as tf
 import matplotlib.pyplot as plt
+plt.switch_backend('agg')
+
 import numpy as np
 import os, cv2
 import argparse
@@ -31,13 +33,11 @@ from nets.vgg16 import vgg16
 from nets.resnet_v1 import resnetv1
 
 CLASSES = ('__background__',
-           'aeroplane', 'bicycle', 'bird', 'boat',
-           'bottle', 'bus', 'car', 'cat', 'chair',
-           'cow', 'diningtable', 'dog', 'horse',
-           'motorbike', 'person', 'pottedplant',
-           'sheep', 'sofa', 'train', 'tvmonitor')
+           'logo')
 
-NETS = {'vgg16': ('vgg16_faster_rcnn_iter_70000.ckpt',),'res101': ('res101_faster_rcnn_iter_110000.ckpt',)}
+# ./tools/demo.py --net vgg16 --dataset pascal_voc
+# ./tools/demo.py --net res101 --dataset pascal_voc
+NETS = {'vgg16': ('vgg16_faster_rcnn_iter_5000.ckpt',),'res101': ('res101_faster_rcnn_iter_5000.ckpt',)}
 DATASETS= {'pascal_voc': ('voc_2007_trainval',),'pascal_voc_0712': ('voc_2007_trainval+voc_2012_trainval',)}
 
 def vis_detections(im, class_name, dets, thresh=0.5):
@@ -58,12 +58,15 @@ def vis_detections(im, class_name, dets, thresh=0.5):
                           bbox[2] - bbox[0],
                           bbox[3] - bbox[1], fill=False,
                           edgecolor='red', linewidth=3.5)
-            )
+            )       
+        print('Rectangle: [{:.3f}, {:.3f}, {:.3f}, {:.3f}]'.format(bbox[0], bbox[1], bbox[2], bbox[3]))
+        
         ax.text(bbox[0], bbox[1] - 2,
                 '{:s} {:.3f}'.format(class_name, score),
                 bbox=dict(facecolor='blue', alpha=0.5),
                 fontsize=14, color='white')
-
+        print('Result: {:s} {:.3f}'.format(class_name, score))
+    
     ax.set_title(('{} detections with '
                   'p({} | box) >= {:.1f}').format(class_name, class_name,
                                                   thresh),
@@ -85,7 +88,7 @@ def demo(sess, net, image_name):
     scores, boxes = im_detect(sess, net, im)
     timer.toc()
     print('Detection took {:.3f}s for {:d} object proposals'.format(timer.total_time, boxes.shape[0]))
-
+    
     # Visualize detections for each class
     CONF_THRESH = 0.8
     NMS_THRESH = 0.3
@@ -138,15 +141,14 @@ if __name__ == '__main__':
         net = resnetv1(num_layers=101)
     else:
         raise NotImplementedError
-    net.create_architecture("TEST", 21,
+    net.create_architecture("TEST", 2,
                           tag='default', anchor_scales=[8, 16, 32])
     saver = tf.train.Saver()
     saver.restore(sess, tfmodel)
 
     print('Loaded network {:s}'.format(tfmodel))
 
-    im_names = ['000456.jpg', '000542.jpg', '001150.jpg',
-                '001763.jpg', '004545.jpg']
+    im_names = ['baidu_logo.jpg', 'baidu_logo2.jpg']
     for im_name in im_names:
         print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
         print('Demo for data/demo/{}'.format(im_name))
